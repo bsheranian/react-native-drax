@@ -386,6 +386,13 @@ const DraxListUnforwarded = <T extends unknown>(
 		});
 	}, []);
 
+	const extractedStyles = StyleSheet.flatten(
+		flatListProps.contentContainerStyle ?? {},
+	);
+	const gap = extractedStyles.gap ?? 0;
+	const columnGap = extractedStyles.columnGap ?? gap;
+	const rowGap = extractedStyles.rowGap ?? gap;
+
 	// Update shift values in response to a drag.
 	const updateShifts = useCallback(
 		(
@@ -397,7 +404,7 @@ const DraxListUnforwarded = <T extends unknown>(
 		) => {
 			const { width = 50, height = 50 } =
 				itemMeasurementsRef.current[fromOriginalIndex] ?? {};
-			const offset = horizontal ? width : height;
+			const offset = horizontal ? width + columnGap : height + rowGap;
 			originalIndexes.forEach((originalIndex, index) => {
 				const shift = shiftsRef.current[originalIndex];
 				let newTargetValue = 0;
@@ -416,7 +423,7 @@ const DraxListUnforwarded = <T extends unknown>(
 				}
 			});
 		},
-		[originalIndexes, horizontal],
+		[originalIndexes, horizontal, columnGap, rowGap],
 	);
 
 	// Calculate absolute position of list item for snapback.
