@@ -48,7 +48,11 @@ export const DraxProvider = ({
 		(id: string, event: DraxGestureStateChangeEvent) => {
 			if (debug) {
 				console.log(
-					`handleGestureStateChange(${id}, ${JSON.stringify(event, null, 2)})`,
+					`handleGestureStateChange(${id}, ${JSON.stringify(
+						event,
+						null,
+						2,
+					)})`,
 				);
 			}
 
@@ -219,6 +223,7 @@ export const DraxProvider = ({
 					grabOffset: dragged.tracking.grabOffset,
 					grabOffsetRatio: dragged.tracking.grabOffsetRatio,
 					hoverPosition: dragged.tracking.hoverPosition,
+					absoluteMeasurements: draggedData.absoluteMeasurements,
 				};
 
 				// Get data for receiver view (if any) before we reset.
@@ -450,6 +455,7 @@ export const DraxProvider = ({
 						dragTranslationRatio,
 						parentId: draggedData.parentId,
 						payload: draggedData.protocol.dragPayload,
+						absoluteMeasurements: draggedData.absoluteMeasurements,
 					},
 				};
 				draggedData.protocol.onDragStart?.(eventData);
@@ -502,7 +508,11 @@ export const DraxProvider = ({
 		(id: string, event: DraxGestureEvent) => {
 			if (debug) {
 				console.log(
-					`handleGestureEvent(${id}, ${JSON.stringify(event, null, 2)})`,
+					`handleGestureEvent(${id}, ${JSON.stringify(
+						event,
+						null,
+						2,
+					)})`,
 				);
 			}
 
@@ -600,6 +610,7 @@ export const DraxProvider = ({
 				grabOffset: dragged.tracking.grabOffset,
 				grabOffsetRatio: dragged.tracking.grabOffsetRatio,
 				hoverPosition: dragged.tracking.hoverPosition,
+				absoluteMeasurements: dragged.data.absoluteMeasurements,
 			};
 
 			// Prepare base drag event data.

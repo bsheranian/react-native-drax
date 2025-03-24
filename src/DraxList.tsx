@@ -32,7 +32,6 @@ import {
 	DraxMonitorDragDropEventData,
 	DraxMonitorEndEventData,
 	DraxViewRegistration,
-	DraxProtocolDragEndResponse,
 	DraxSnapbackTargetPreset,
 	isWithCancelledFlag,
 } from "./types";
@@ -68,8 +67,10 @@ const DraxListUnforwarded = <T extends unknown>(
 		onItemDragPositionChange,
 		onItemDragEnd,
 		onItemReorder,
+		onReceiveExternalItem,
 		viewPropsExtractor,
 		id: idProp,
+		allowReceivingExternalItems,
 		reorderable: reorderableProp,
 		onScroll: onScrollProp,
 		itemsDraggable = true,
@@ -378,11 +379,19 @@ const DraxListUnforwarded = <T extends unknown>(
 	}, [stopScroll, startScroll]);
 
 	// Reset all shift values.
-	const resetShifts = useCallback(() => {
+	const resetShifts = useCallback((animated: boolean = false) => {
 		shiftsRef.current.forEach((shift) => {
 			// eslint-disable-next-line no-param-reassign
 			shift.targetValue = 0;
-			shift.animatedValue.setValue(0);
+			if (animated) {
+				Animated.timing(shift.animatedValue, {
+					duration: 200,
+					toValue: 0,
+					useNativeDriver: true,
+				}).start();
+			} else {
+				shift.animatedValue.setValue(0);
+			}
 		});
 	}, []);
 
@@ -395,23 +404,24 @@ const DraxListUnforwarded = <T extends unknown>(
 
 	// Update shift values in response to a drag.
 	const updateShifts = useCallback(
-		(
-			{
-				index: fromIndex,
-				originalIndex: fromOriginalIndex,
-			}: ListItemPayload,
-			{ index: toIndex }: ListItemPayload,
-		) => {
-			const { width = 50, height = 50 } =
-				itemMeasurementsRef.current[fromOriginalIndex] ?? {};
+		(fromPayload, toPayload, draggedMeasurements) => {
+			const isExternalItem = fromPayload.parentId !== id;
+			const fromIndex = isExternalItem ? -1 : fromPayload.index;
+			const { width = 50, height = 50 } = draggedMeasurements ?? {};
 			const offset = horizontal ? width + columnGap : height + rowGap;
 			originalIndexes.forEach((originalIndex, index) => {
 				const shift = shiftsRef.current[originalIndex];
 				let newTargetValue = 0;
-				if (index > fromIndex && index <= toIndex) {
-					newTargetValue = -offset;
-				} else if (index < fromIndex && index >= toIndex) {
-					newTargetValue = offset;
+				if (isExternalItem) {
+					if (index >= toPayload.index) {
+						newTargetValue = offset;
+					}
+				} else {
+					if (index > fromIndex && index <= toPayload.index) {
+						newTargetValue = -offset;
+					} else if (index < fromIndex && index >= toPayload.index) {
+						newTargetValue = offset;
+					}
 				}
 				if (shift.targetValue !== newTargetValue) {
 					shift.targetValue = newTargetValue;
@@ -423,18 +433,22 @@ const DraxListUnforwarded = <T extends unknown>(
 				}
 			});
 		},
-		[originalIndexes, horizontal, columnGap, rowGap],
+		[originalIndexes, horizontal, columnGap, rowGap, id],
 	);
 
 	// Calculate absolute position of list item for snapback.
 	const calculateSnapbackTarget = useCallback(
-		(
-			{
-				index: fromIndex,
-				originalIndex: fromOriginalIndex,
-			}: ListItemPayload,
-			{ index: toIndex, originalIndex: toOriginalIndex }: ListItemPayload,
-		) => {
+		(fromPayload, toPayload) => {
+			// If it's an external item, we don't need snapback
+			if (fromPayload.parentId !== id) {
+				return DraxSnapbackTargetPreset.None;
+			}
+
+			const { index: fromIndex, originalIndex: fromOriginalIndex } =
+				fromPayload;
+
+			const { index: toIndex, originalIndex: toOriginalIndex } =
+				toPayload;
 			const containerMeasurements = containerMeasurementsRef.current;
 			const itemMeasurements = itemMeasurementsRef.current;
 			if (containerMeasurements) {
@@ -501,32 +515,62 @@ const DraxListUnforwarded = <T extends unknown>(
 			}
 			return DraxSnapbackTargetPreset.None;
 		},
-		[horizontal, itemCount, originalIndexes],
+		[horizontal, itemCount, originalIndexes, id],
 	);
 
 	// Stop auto-scrolling, and potentially update shifts and reorder data.
 	const handleInternalDragEnd = useCallback(
-		(
-			eventData:
-				| DraxMonitorEventData
-				| DraxMonitorEndEventData
-				| DraxMonitorDragDropEventData,
-			totalDragEnd: boolean,
-		): DraxProtocolDragEndResponse => {
+		(eventData, totalDragEnd) => {
 			// Always stop auto-scroll on drag end.
 			scrollStateRef.current = AutoScrollDirection.None;
 			stopScroll();
 
 			const { dragged, receiver } = eventData;
 
+			// Reset all shifts regardless of what happens
+			resetShifts(!totalDragEnd);
+
 			// Check if we need to handle this drag end.
-			if (reorderable && dragged.parentId === id) {
+
+			const isOurReceiver = receiver?.parentId === id;
+			const isOurDragged = dragged.parentId === id;
+
+			// Handle receiving external item
+			if (
+				allowReceivingExternalItems &&
+				!isOurDragged &&
+				isOurReceiver &&
+				reorderable
+			) {
+				const toPayload = receiver.payload;
+
+				const { index: toIndex } = toPayload;
+
+				// If an external item was dropped on us, call the callback
+
+				if (totalDragEnd && onReceiveExternalItem) {
+					onReceiveExternalItem({
+						...eventData,
+
+						draggedItem: dragged.payload.item,
+
+						toIndex,
+
+						receivingList: { id },
+					});
+				}
+
+				// Reset currently dragged over position index to undefined
+
+				if (draggedToIndex.current !== undefined) {
+					draggedToIndex.current = undefined;
+				}
+
+				return DraxSnapbackTargetPreset.None;
+			} else if (reorderable && isOurDragged) {
 				// Determine list indexes of dragged/received items, if any.
-				const fromPayload = dragged.payload as ListItemPayload;
-				const toPayload =
-					receiver?.parentId === id
-						? (receiver.payload as ListItemPayload)
-						: undefined;
+				const fromPayload = dragged.payload;
+				const toPayload = isOurReceiver ? receiver.payload : undefined;
 
 				const { index: fromIndex, originalIndex: fromOriginalIndex } =
 					fromPayload;
@@ -537,8 +581,6 @@ const DraxListUnforwarded = <T extends unknown>(
 						? data?.[toOriginalIndex]
 						: undefined;
 
-				// Reset all shifts and call callback, regardless of whether toPayload exists.
-				resetShifts();
 				if (totalDragEnd) {
 					onItemDragEnd?.({
 						...eventData,
@@ -552,7 +594,7 @@ const DraxListUnforwarded = <T extends unknown>(
 					});
 				}
 
-				// Reset currently dragged over position index to undefined.
+				// Reset currently dragged over position index to undefined
 				if (draggedToIndex.current !== undefined) {
 					if (!totalDragEnd) {
 						onItemDragPositionChange?.({
@@ -568,17 +610,24 @@ const DraxListUnforwarded = <T extends unknown>(
 
 				if (toPayload !== undefined) {
 					// If dragged item and received item were ours, reorder data.
-					// console.log(`moving ${fromPayload.index} -> ${toPayload.index}`);
 					const snapbackTarget = calculateSnapbackTarget(
 						fromPayload,
 						toPayload,
 					);
 					if (data) {
+						const newOriginalIndexes = originalIndexes.slice();
+
+						newOriginalIndexes.splice(
+							toIndex,
+							0,
+							newOriginalIndexes.splice(fromIndex, 1)[0],
+						);
+						setOriginalIndexes(newOriginalIndexes);
 						onItemReorder?.({
 							fromIndex,
 							fromItem: data[fromOriginalIndex],
-							toIndex: toIndex!,
-							toItem: data[toOriginalIndex!],
+							toIndex: toIndex,
+							toItem: data[toOriginalIndex],
 						});
 					}
 					return snapbackTarget;
@@ -598,6 +647,8 @@ const DraxListUnforwarded = <T extends unknown>(
 			onItemDragEnd,
 			onItemDragPositionChange,
 			onItemReorder,
+			allowReceivingExternalItems,
+			onReceiveExternalItem,
 		],
 	);
 
@@ -616,39 +667,73 @@ const DraxListUnforwarded = <T extends unknown>(
 					index,
 					item: data?.[originalIndex],
 				});
+			} else if (allowReceivingExternalItems && dragged.parentId !== id) {
+				// Store info about the external item being dragged
+				externalDraggedItem.current = {
+					payload: dragged.payload,
+					measurements: dragged.measurements,
+					parentId: dragged.parentId,
+				};
 			}
 		},
-		[id, reorderable, data, setDraggedItem, onItemDragStart],
+
+		[
+			id,
+			reorderable,
+			data,
+			setDraggedItem,
+			onItemDragStart,
+			allowReceivingExternalItems,
+		],
 	);
 
 	// Monitor drags to react with item shifts and auto-scrolling.
 	const onMonitorDragOver = useCallback(
 		(eventData: DraxMonitorEventData) => {
 			const { dragged, receiver, monitorOffsetRatio } = eventData;
+			const isDraggedFromOurList = dragged.parentId === id;
+			const isReceiverInOurList = receiver?.parentId === id;
 			// First, check if we need to shift items.
-			if (reorderable && dragged.parentId === id) {
-				// One of our list items is being dragged.
-				const fromPayload: ListItemPayload = dragged.payload;
 
-				// Find its current position index in the list, if any.
-				const toPayload: ListItemPayload | undefined =
-					receiver?.parentId === id ? receiver.payload : undefined;
+			if (
+				reorderable &&
+				(isDraggedFromOurList ||
+					(allowReceivingExternalItems && isReceiverInOurList))
+			) {
+				// One of our list items is being dragged OR an external item is over our list
+				const fromPayload = dragged.payload;
 
-				// Check and update currently dragged over position index.
+				// Add parent ID to distinguish external items
+				fromPayload.parentId = dragged.parentId;
+				// Find current position in the list, if any
+				const toPayload = isReceiverInOurList
+					? receiver.payload
+					: undefined;
+
+				// Check and update currently dragged over position index
+
 				const toIndex = toPayload?.index;
 				if (toIndex !== draggedToIndex.current) {
-					onItemDragPositionChange?.({
-						...eventData,
-						toIndex,
-						index: fromPayload.index,
-						item: data?.[fromPayload.originalIndex],
-						previousIndex: draggedToIndex.current,
-					});
+					if (isDraggedFromOurList) {
+						onItemDragPositionChange?.({
+							...eventData,
+							toIndex,
+							index: fromPayload.index,
+							item: data?.[fromPayload.originalIndex],
+							previousIndex: draggedToIndex.current,
+						});
+					}
 					draggedToIndex.current = toIndex;
 				}
 
-				// Update shift transforms for items in the list.
-				updateShifts(fromPayload, toPayload ?? fromPayload);
+				// Update shift transforms for items in the list
+				if (toPayload) {
+					updateShifts(
+						fromPayload,
+						toPayload,
+						dragged.absoluteMeasurements,
+					);
+				}
 			}
 
 			// Next, see if we need to auto-scroll.

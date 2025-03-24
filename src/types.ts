@@ -70,6 +70,8 @@ export interface DraxEventDraggedViewData extends DraxEventViewData {
 	grabOffsetRatio: Position;
 	/** The position in absolute coordinates of the dragged hover view (dragAbsolutePosition - grabOffset) */
 	hoverPosition: Animated.ValueXY;
+	/** The absolute measurements of the view */
+	absoluteMeasurements: DraxViewMeasurements;
 }
 
 /** Data about a receiver view involved in a Drax event */
@@ -892,6 +894,23 @@ export interface DraxListOnItemReorder<TItem> {
 	(eventData: DraxListOnItemReorderEventData<TItem>): void;
 }
 
+/** Event data for when an external item is received in a new position within a DraxList, reordering the list */
+export interface DraxListOnReceiveExternalItemEventData<TItem> {
+	/* The item that was moved */
+	fromItem: TItem;
+	/* The list index of the item that was moved */
+	fromIndex: number;
+	/* The item it was moved onto */
+	toItem: TItem;
+	/* The list index of the item it was moved onto */
+	toIndex: number;
+}
+
+/** Callback handler for when an external item is received in a new position within a DraxList, reordering the list */
+export interface DraxListOnReceiveExternalItem<TItem> {
+	(eventData: DraxListOnReceiveExternalItemEventData<TItem>): void;
+}
+
 /** Props for a DraxList; extends standard FlatList props */
 export interface DraxListProps<TItem>
 	extends Omit<FlatListProps<TItem>, "renderItem">,
@@ -926,6 +945,12 @@ export interface DraxListProps<TItem>
 
 	/** Callback handler for when a list item is moved within the list, reordering the list */
 	onItemReorder?: DraxListOnItemReorder<TItem>;
+
+	/** Callback handler for when an external item is received in a new position within the list, reordering the list */
+	onReceiveExternalItem?: DraxListOnReceiveExternalItem<TItem>;
+
+	/** Whether or not the list should allow receiving external items */
+	allowReceivingExternalItems?: boolean;
 
 	/** Can the list be reordered by dragging items? Defaults to true if onItemReorder is set. */
 	reorderable?: boolean;
