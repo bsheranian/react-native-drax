@@ -398,8 +398,11 @@ const DraxListUnforwarded = <T extends unknown>(
 	const extractedStyles = StyleSheet.flatten(
 		flatListProps.contentContainerStyle ?? {},
 	);
+	// @ts-ignore
 	const gap = extractedStyles.gap ?? 0;
+	// @ts-ignore
 	const columnGap = extractedStyles.columnGap ?? gap;
+	// @ts-ignore
 	const rowGap = extractedStyles.rowGap ?? gap;
 
 	// Update shift values in response to a drag.
@@ -667,24 +670,10 @@ const DraxListUnforwarded = <T extends unknown>(
 					index,
 					item: data?.[originalIndex],
 				});
-			} else if (allowReceivingExternalItems && dragged.parentId !== id) {
-				// Store info about the external item being dragged
-				externalDraggedItem.current = {
-					payload: dragged.payload,
-					measurements: dragged.measurements,
-					parentId: dragged.parentId,
-				};
 			}
 		},
 
-		[
-			id,
-			reorderable,
-			data,
-			setDraggedItem,
-			onItemDragStart,
-			allowReceivingExternalItems,
-		],
+		[id, reorderable, data, setDraggedItem, onItemDragStart],
 	);
 
 	// Monitor drags to react with item shifts and auto-scrolling.
