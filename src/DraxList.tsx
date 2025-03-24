@@ -574,13 +574,6 @@ const DraxListUnforwarded = <T extends unknown>(
 						toPayload,
 					);
 					if (data) {
-						const newOriginalIndexes = originalIndexes.slice();
-						newOriginalIndexes.splice(
-							toIndex!,
-							0,
-							newOriginalIndexes.splice(fromIndex, 1)[0],
-						);
-						setOriginalIndexes(newOriginalIndexes);
 						onItemReorder?.({
 							fromIndex,
 							fromItem: data[fromOriginalIndex],
