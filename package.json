@@ -11,7 +11,9 @@
 	"scripts": {
 		"lint": "yarn run eslint src",
 		"build": "yarn run tsc",
-		"prepublish": "yarn run build"
+		"prepublish": "yarn run build",
+		"prettier": "prettier --write \"src/**/*.{js,jsx,ts,tsx,css,md}\"",
+		"prettier:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,css,md}\""
 	},
 	"author": "Joe Lafiosca <joe@proxi.gg>",
 	"license": "MIT",

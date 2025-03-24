@@ -14,12 +14,14 @@ module.exports = {
 		'react',
 		'react-native',
 		'react-hooks',
+		'prettier',
 	],
 	extends: [
 		// 'plugin:@typescript-eslint/recommended', <-- consider this when time permits
 		'plugin:react/recommended',
 		'plugin:react-native/all',
 		'airbnb-typescript',
+		'prettier'
 	],
 	env: {
 		es6: true,
@@ -32,6 +34,7 @@ module.exports = {
 		},
 	},
 	rules: {
+		'prettier/prettier': 'error',
 		'no-undef': 0, // TS handles this; https://github.com/eslint/eslint/issues/13699#issuecomment-694223066
 		'no-tabs': 0,
 		'no-shadow': 0,
