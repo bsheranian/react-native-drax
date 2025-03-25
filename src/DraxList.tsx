@@ -662,95 +662,41 @@ const DraxListUnforwarded = <T extends unknown>(
 
 	const findDropIndex = useCallback(
 		(dragged: DraxEventDraggedViewData) => {
-			let toIndex: number | undefined = undefined;
-			console.log("[findDropIndex]: finding index", data?.length);
 			// If no receiver but item is still over our list, calculate position
 			if (data && data.length > 0) {
 				// Get list item measurements (you'll need to store these)
 				// @ts-ignore
-				const itemPositions: DraxViewMeasurements[] =
-					itemMeasurementsRef.current
-						.map((measurements) => {
-							// This assumes you have refs to your list items
-							if (!measurements) return null;
-							return measurements;
-						})
-						.filter(Boolean);
-
-				console.log(
-					"[findDropIndex]: item positions",
-					itemPositions.length,
-				);
-				if (itemPositions.length > 0) {
+				const itemCentroids = itemMeasurementsRef.current
+					.map((measurements) => {
+						// This assumes you have refs to your list items
+						if (!measurements) return null;
+						return horizontal
+							? measurements.x + measurements.width / 2
+							: measurements.y + measurements.height / 2;
+					})
+					.filter(Boolean)
+					.sort((a, b) => a - b);
+				if (itemCentroids.length > 0) {
 					// Calculate which item we're closest to
 
-					console.log(
-						"[findDropIndex]: drag position",
-						dragged.absoluteMeasurements.x,
-						dragged.absoluteMeasurements.y,
-					);
 					const dragPosition = horizontal
-						? dragged.absoluteMeasurements.x
-						: dragged.absoluteMeasurements.y;
-
-					// Find the closest item or gap
-					// This creates pairs of adjacent items to find the gap between them
-					let closestIndex = 0;
-					let smallestDistance = Infinity;
-
-					// First check if we're before the first item
-					if (itemPositions[0]) {
-						const firstItemPos = horizontal
-							? itemPositions[0].x
-							: itemPositions[0].y;
-						if (dragPosition < firstItemPos) {
-							toIndex = 0; // Before first item
-						}
-					}
-
-					// Check if we're after the last item
-					if (
-						toIndex === undefined &&
-						itemPositions[itemPositions.length - 1]
-					) {
-						const lastItemPos = horizontal
-							? itemPositions[itemPositions.length - 1].x +
-								itemPositions[itemPositions.length - 1].width
-							: itemPositions[itemPositions.length - 1].y +
-								itemPositions[itemPositions.length - 1].height;
-
-						if (dragPosition > lastItemPos) {
-							toIndex = data.length; // After last item
-						}
-					}
+						? dragged.absoluteMeasurements.x +
+							dragged.dragOffset.x -
+							dragged.grabOffset.x
+						: dragged.absoluteMeasurements.y +
+							dragged.dragOffset.y -
+							dragged.grabOffset.y;
 
 					// Check between items
-					if (toIndex === undefined) {
-						for (let i = 0; i < itemPositions.length - 1; i++) {
-							const current = itemPositions[i];
-							const next = itemPositions[i + 1];
-
-							if (!current || !next) continue;
-
-							const currentEnd = horizontal
-								? current.x + current.width
-								: current.y + current.height;
-							const nextStart = horizontal ? next.x : next.y;
-							const gapMiddle = (currentEnd + nextStart) / 2;
-
-							const distance = Math.abs(dragPosition - gapMiddle);
-							if (distance < smallestDistance) {
-								smallestDistance = distance;
-								closestIndex = i + 1; // Position after current item
-							}
+					for (let i = 0; i < itemCentroids.length; i++) {
+						if (dragPosition < itemCentroids[i]) {
+							return i;
 						}
-
-						toIndex = closestIndex;
 					}
+					return data.length;
 				}
 			}
-
-			return toIndex;
+			return undefined;
 		},
 		[data, horizontal, itemMeasurementsRef],
 	);
@@ -792,7 +738,7 @@ const DraxListUnforwarded = <T extends unknown>(
 				}
 
 				// Update shift transforms for items in the list
-				if (toIndex) {
+				if (toIndex !== undefined) {
 					updateShifts(
 						fromPayload,
 						{ index: toIndex },
