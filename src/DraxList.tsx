@@ -681,8 +681,7 @@ const DraxListUnforwarded = <T extends unknown>(
 
 			if (
 				reorderable &&
-				(isDraggedFromOurList ||
-					(allowReceivingExternalItems && isReceiverInOurList))
+				(isDraggedFromOurList || allowReceivingExternalItems)
 			) {
 				// One of our list items is being dragged OR an external item is over our list
 				const fromPayload = dragged.payload;
@@ -706,6 +705,9 @@ const DraxListUnforwarded = <T extends unknown>(
 							item: data?.[fromPayload.originalIndex],
 							previousIndex: draggedToIndex.current,
 						});
+					}
+					if (toIndex === undefined) {
+						resetShifts(true);
 					}
 					draggedToIndex.current = toIndex;
 				}
