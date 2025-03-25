@@ -10,7 +10,6 @@ import {
 	Animated,
 	View,
 	StyleSheet,
-	findNodeHandle,
 	Dimensions,
 	ViewStyle,
 	StyleProp,
@@ -130,11 +129,8 @@ export const DraxView = ({
 	// The unique identifier for this view.
 	const id = useDraxId(idProp);
 
-	// The underlying View, for measuring.
+	// The underlying View, for measuring and for subprovider nesting if this is a Drax parent view.
 	const viewRef = useRef<View | null>(null);
-
-	// The underlying View node handle, used for subprovider nesting if this is a Drax parent view.
-	const nodeHandleRef = useRef<number | null>(null);
 
 	// This view's measurements, for reference.
 	const measurementsRef = useRef<DraxViewMeasurements | undefined>(undefined);
@@ -149,7 +145,7 @@ export const DraxView = ({
 		updateViewMeasurements,
 		handleGestureEvent,
 		handleGestureStateChange,
-		rootNodeHandleRef,
+		rootViewRef,
 		parent: contextParent,
 	} = useDraxContext();
 
@@ -158,9 +154,7 @@ export const DraxView = ({
 	const parentId = parent?.id;
 
 	// Identify parent node handle ref.
-	const parentNodeHandleRef = parent
-		? parent.nodeHandleRef
-		: rootNodeHandleRef;
+	const parentViewRef = parent ? parent.viewRef : rootViewRef;
 
 	// Register and unregister with Drax context when necessary.
 	useEffect(() => {
@@ -211,7 +205,7 @@ export const DraxView = ({
 			hoverDraggingWithReceiverStyle,
 			hoverDraggingWithoutReceiverStyle,
 			hoverDragReleasedStyle,
-		],
+		]
 	);
 
 	// Internal render function for hover views, used in protocol by provider.
@@ -219,8 +213,8 @@ export const DraxView = ({
 		() =>
 			draggable && !noHover
 				? (
-						internalProps: DraxInternalRenderHoverViewProps,
-					): ReactNode => {
+						internalProps: DraxInternalRenderHoverViewProps
+				  ): ReactNode => {
 						let content: ReactNode;
 						const render = renderHoverContent ?? renderContent;
 
@@ -246,7 +240,7 @@ export const DraxView = ({
 								{content}
 							</Animated.View>
 						);
-					}
+				  }
 				: undefined,
 		[
 			draggable,
@@ -256,7 +250,7 @@ export const DraxView = ({
 			getCombinedHoverStyle,
 			props,
 			children,
-		],
+		]
 	);
 
 	// Report updates to our protocol callbacks when we have an id and whenever the props change.
@@ -337,7 +331,7 @@ export const DraxView = ({
 	const onHandlerStateChange = useCallback(
 		({ nativeEvent }: LongPressGestureHandlerStateChangeEvent) =>
 			handleGestureStateChange(id, nativeEvent),
-		[id, handleGestureStateChange],
+		[id, handleGestureStateChange]
 	);
 
 	// Create throttled gesture event handler, tied to this id.
@@ -347,14 +341,14 @@ export const DraxView = ({
 				// Pass the event up to the Drax context.
 				handleGestureEvent(id, event);
 			}, 10),
-		[id, handleGestureEvent],
+		[id, handleGestureEvent]
 	);
 
 	// Connect gesture event handling into Drax context, extracting nativeEvent.
 	const onGestureEvent = useCallback(
 		({ nativeEvent }: LongPressGestureHandlerGestureEvent) =>
 			throttledHandleGestureEvent(nativeEvent),
-		[throttledHandleGestureEvent],
+		[throttledHandleGestureEvent]
 	);
 
 	// Build a callback which will report our measurements to Drax context,
@@ -377,19 +371,19 @@ export const DraxView = ({
 								x: x!,
 								y: y!,
 								width: width!,
-							};
+						  };
 				measurementsRef.current = measurements;
 				updateViewMeasurements({ id, measurements });
 				onMeasure?.(measurements);
 				measurementHandler?.(measurements);
 			},
-		[id, updateViewMeasurements, onMeasure],
+		[id, updateViewMeasurements, onMeasure]
 	);
 
 	// Callback which will report our measurements to Drax context and onMeasure.
 	const updateMeasurements = useMemo(
 		() => buildMeasureCallback(),
-		[buildMeasureCallback],
+		[buildMeasureCallback]
 	);
 
 	// Measure and report our measurements to Drax context, onMeasure, and an
@@ -398,8 +392,7 @@ export const DraxView = ({
 		(measurementHandler?: DraxViewMeasurementHandler) => {
 			const view = viewRef.current;
 			if (view) {
-				const nodeHandle = parentNodeHandleRef.current;
-				if (nodeHandle) {
+				if (parentViewRef.current) {
 					const measureCallback = measurementHandler
 						? buildMeasureCallback(measurementHandler)
 						: updateMeasurements;
@@ -414,7 +407,7 @@ export const DraxView = ({
 				// console.log('No view to measure');
 			}
 		},
-		[parentNodeHandleRef, buildMeasureCallback, updateMeasurements],
+		[parentNodeHandleRef, buildMeasureCallback, updateMeasurements]
 	);
 
 	// Measure and send our measurements to Drax context and onMeasure, used when this view finishes layout.

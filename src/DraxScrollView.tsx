@@ -10,7 +10,6 @@ import {
 	ScrollView,
 	NativeSyntheticEvent,
 	NativeScrollEvent,
-	findNodeHandle,
 } from "react-native";
 
 import { DraxView } from "./DraxView";
@@ -34,7 +33,7 @@ import {
 
 const DraxScrollViewUnforwarded = (
 	props: PropsWithChildren<DraxScrollViewProps>,
-	forwardedRef: ForwardedRef<ScrollView>,
+	forwardedRef: ForwardedRef<ScrollView>
 ) => {
 	const {
 		children,
@@ -53,15 +52,12 @@ const DraxScrollViewUnforwarded = (
 	// The unique identifer for this view.
 	const id = useDraxId(idProp);
 
-	// Scrollable view, used for scrolling.
+	// Scrollable view, used for scrolling and measuring children
 	const scrollRef = useRef<ScrollView | null>(null);
-
-	// ScrollView node handle, used for measuring children.
-	const nodeHandleRef = useRef<number | null>(null);
 
 	// Container view measurements, for scrolling by percentage.
 	const containerMeasurementsRef = useRef<DraxViewMeasurements | undefined>(
-		undefined,
+		undefined
 	);
 
 	// Content size, for scrolling by percentage.
@@ -132,7 +128,7 @@ const DraxScrollViewUnforwarded = (
 		doScroll();
 		autoScrollIntervalRef.current = setInterval(
 			doScroll,
-			autoScrollIntervalLength,
+			autoScrollIntervalLength
 		);
 	}, [doScroll, autoScrollIntervalLength]);
 
@@ -165,7 +161,7 @@ const DraxScrollViewUnforwarded = (
 		(measurements: DraxViewMeasurements | undefined) => {
 			containerMeasurementsRef.current = measurements;
 		},
-		[],
+		[]
 	);
 
 	// Monitor drag-over events to react with auto-scrolling.
@@ -201,14 +197,13 @@ const DraxScrollViewUnforwarded = (
 			startScroll,
 			autoScrollBackThreshold,
 			autoScrollForwardThreshold,
-		],
+		]
 	);
 
 	// Set the ScrollView and node handle refs.
 	const setScrollViewRefs = useCallback(
 		(ref: ScrollView | null) => {
 			scrollRef.current = ref;
-			nodeHandleRef.current = ref && findNodeHandle(ref);
 			if (forwardedRef) {
 				if (typeof forwardedRef === "function") {
 					forwardedRef(ref);
@@ -218,7 +213,7 @@ const DraxScrollViewUnforwarded = (
 				}
 			}
 		},
-		[forwardedRef],
+		[forwardedRef]
 	);
 
 	// Track content size.
@@ -227,7 +222,7 @@ const DraxScrollViewUnforwarded = (
 			contentSizeRef.current = { x: width, y: height };
 			return onContentSizeChangeProp?.(width, height);
 		},
-		[onContentSizeChangeProp],
+		[onContentSizeChangeProp]
 	);
 
 	// Update tracked scroll position when list is scrolled.
@@ -239,7 +234,7 @@ const DraxScrollViewUnforwarded = (
 			scrollPositionRef.current = { ...contentOffset };
 			return onScrollProp?.(event);
 		},
-		[onScrollProp],
+		[onScrollProp]
 	);
 
 	return id ? (
@@ -253,7 +248,7 @@ const DraxScrollViewUnforwarded = (
 			onMonitorDragEnd={resetScroll}
 			onMonitorDragDrop={resetScroll}
 		>
-			<DraxSubprovider parent={{ id, nodeHandleRef }}>
+			<DraxSubprovider parent={{ id, viewRef: scrollRef }}>
 				<ScrollView
 					{...scrollViewProps}
 					ref={setScrollViewRefs}

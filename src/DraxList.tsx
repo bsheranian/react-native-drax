@@ -16,7 +16,6 @@ import {
 	NativeSyntheticEvent,
 	FlatList,
 	Animated,
-	findNodeHandle,
 	StyleSheet,
 } from "react-native";
 
@@ -91,11 +90,8 @@ const DraxListUnforwarded = <T extends unknown>(
 	// The unique identifer for this list's Drax view.
 	const id = useDraxId(idProp);
 
-	// FlatList, used for scrolling.
+	// FlatList, used for scrolling and measuring children
 	const flatListRef = useRef<FlatList<T> | null>(null);
-
-	// FlatList node handle, used for measuring children.
-	const nodeHandleRef = useRef<number | null>(null);
 
 	// Container view measurements, for scrolling by percentage.
 	const containerMeasurementsRef = useRef<DraxViewMeasurements | undefined>(
@@ -290,7 +286,6 @@ const DraxListUnforwarded = <T extends unknown>(
 	const setFlatListRefs = useCallback(
 		(ref) => {
 			flatListRef.current = ref;
-			nodeHandleRef.current = ref && findNodeHandle(ref);
 			if (forwardedRef) {
 				if (typeof forwardedRef === "function") {
 					forwardedRef(ref);
@@ -790,7 +785,10 @@ const DraxListUnforwarded = <T extends unknown>(
 			onMonitorDragEnd={onMonitorDragEnd}
 			onMonitorDragDrop={onMonitorDragDrop}
 		>
-			<DraxSubprovider parent={{ id, nodeHandleRef }}>
+			<DraxSubprovider parent={{ id, viewRef: {
+				//@ts-ignore
+				current: flatListRef.current?.getNativeScrollRef()
+			} }}>
 				<FlatList
 					{...flatListProps}
 					style={flatListStyle}
