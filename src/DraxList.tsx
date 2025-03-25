@@ -785,10 +785,15 @@ const DraxListUnforwarded = <T extends unknown>(
 			onMonitorDragEnd={onMonitorDragEnd}
 			onMonitorDragDrop={onMonitorDragDrop}
 		>
-			<DraxSubprovider parent={{ id, viewRef: {
-				//@ts-ignore
-				current: flatListRef.current?.getNativeScrollRef()
-			} }}>
+			<DraxSubprovider
+				parent={{
+					id,
+					viewRef: {
+						//@ts-ignore
+						current: flatListRef.current?.getNativeScrollRef(),
+					},
+				}}
+			>
 				<FlatList
 					{...flatListProps}
 					style={flatListStyle}

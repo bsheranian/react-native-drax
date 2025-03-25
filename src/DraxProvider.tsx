@@ -51,8 +51,8 @@ export const DraxProvider = ({
 					`handleGestureStateChange(${id}, ${JSON.stringify(
 						event,
 						null,
-						2
-					)})`
+						2,
+					)})`,
 				);
 			}
 
@@ -76,7 +76,7 @@ export const DraxProvider = ({
 
 				if (debug) {
 					console.log(
-						`Ignoring gesture state change because another view is being dragged: ${dragged.id}`
+						`Ignoring gesture state change because another view is being dragged: ${dragged.id}`,
 					);
 				}
 				return;
@@ -90,13 +90,13 @@ export const DraxProvider = ({
 				if (dragged?.id === id) {
 					if (debug) {
 						console.log(
-							`Data for currently dragged view id ${id} could not be found`
+							`Data for currently dragged view id ${id} could not be found`,
 						);
 						// TODO: reset drag and notify monitors
 					}
 				} else if (debug) {
 					console.log(
-						`Ignoring gesture for view id ${id} because view data was not found`
+						`Ignoring gesture for view id ${id} because view data was not found`,
 					);
 				}
 				return;
@@ -137,7 +137,7 @@ export const DraxProvider = ({
 						// This should never happen, but we'll do nothing.
 						if (debug) {
 							console.log(
-								`Received unexpected BEGAN event for dragged view id ${id}`
+								`Received unexpected BEGAN event for dragged view id ${id}`,
 							);
 						}
 						break;
@@ -145,7 +145,7 @@ export const DraxProvider = ({
 						// This should also never happen, but we'll do nothing.
 						if (debug) {
 							console.log(
-								`Received unexpected ACTIVE event for dragged view id ${id}`
+								`Received unexpected ACTIVE event for dragged view id ${id}`,
 							);
 						}
 						break;
@@ -153,7 +153,7 @@ export const DraxProvider = ({
 						// The gesture handler system has cancelled, so end the drag without dropping.
 						if (debug) {
 							console.log(
-								`Stop dragging view id ${id} (CANCELLED)`
+								`Stop dragging view id ${id} (CANCELLED)`,
 							);
 						}
 						endDrag = true;
@@ -163,7 +163,7 @@ export const DraxProvider = ({
 						// This should never happen, but let's end the drag without dropping.
 						if (debug) {
 							console.log(
-								`Received unexpected FAILED event for dragged view id ${id}`
+								`Received unexpected FAILED event for dragged view id ${id}`,
 							);
 						}
 						endDrag = true;
@@ -180,7 +180,7 @@ export const DraxProvider = ({
 					default:
 						if (debug) {
 							console.warn(
-								`Unrecognized gesture state ${gestureState} for dragged view`
+								`Unrecognized gesture state ${gestureState} for dragged view`,
 							);
 						}
 						break;
@@ -279,7 +279,7 @@ export const DraxProvider = ({
 									relativePositionRatio: monitorOffsetRatio,
 								} = getRelativePosition(
 									dragAbsolutePosition,
-									monitorData.absoluteMeasurements
+									monitorData.absoluteMeasurements,
 								);
 								response =
 									monitorData.protocol.onMonitorDragDrop?.({
@@ -341,7 +341,7 @@ export const DraxProvider = ({
 								relativePositionRatio: monitorOffsetRatio,
 							} = getRelativePosition(
 								dragAbsolutePosition,
-								monitorData.absoluteMeasurements
+								monitorData.absoluteMeasurements,
 							);
 							response = monitorData.protocol.onMonitorDragEnd?.({
 								...monitorEventData,
@@ -388,7 +388,7 @@ export const DraxProvider = ({
 				default:
 					if (debug) {
 						console.warn(
-							`Unrecognized gesture state ${gestureState} for non-dragged view id ${id}`
+							`Unrecognized gesture state ${gestureState} for non-dragged view id ${id}`,
 						);
 					}
 					break;
@@ -440,7 +440,7 @@ export const DraxProvider = ({
 				});
 				if (debug) {
 					console.log(
-						`Start dragging view id ${id} at absolute position (${dragAbsolutePosition.x}, ${dragAbsolutePosition.y})`
+						`Start dragging view id ${id} at absolute position (${dragAbsolutePosition.x}, ${dragAbsolutePosition.y})`,
 					);
 				}
 				const eventData = {
@@ -463,7 +463,7 @@ export const DraxProvider = ({
 				// Find which monitors and receiver this drag is over.
 				const { monitors } = findMonitorsAndReceiver(
 					dragAbsolutePosition,
-					id
+					id,
 				);
 
 				// Notify monitors and update monitor tracking.
@@ -481,10 +481,10 @@ export const DraxProvider = ({
 								monitorOffsetRatio,
 							};
 							monitorData.protocol.onMonitorDragStart?.(
-								monitorEventData
+								monitorEventData,
 							);
 							return monitorId;
-						}
+						},
 					);
 					setMonitorIds(newMonitorIds);
 				}
@@ -501,7 +501,7 @@ export const DraxProvider = ({
 			findMonitorsAndReceiver,
 			setMonitorIds,
 			debug,
-		]
+		],
 	);
 
 	const handleGestureEvent = useCallback(
@@ -511,8 +511,8 @@ export const DraxProvider = ({
 					`handleGestureEvent(${id}, ${JSON.stringify(
 						event,
 						null,
-						2
-					)})`
+						2,
+					)})`,
 				);
 			}
 
@@ -522,7 +522,7 @@ export const DraxProvider = ({
 				// We're not tracking any gesture yet.
 				if (debug) {
 					console.log(
-						"Ignoring gesture event because we have not initialized a drag"
+						"Ignoring gesture event because we have not initialized a drag",
 					);
 				}
 				return;
@@ -532,7 +532,7 @@ export const DraxProvider = ({
 				// This is not a gesture we're tracking. We don't support multiple simultaneous drags.
 				if (debug) {
 					console.log(
-						"Ignoring gesture event because this is not the view being dragged"
+						"Ignoring gesture event because this is not the view being dragged",
 					);
 				}
 				return;
@@ -545,10 +545,10 @@ export const DraxProvider = ({
 
 			if (debug) {
 				console.log(
-					`Dragged item absolute coordinates (${dragged.data.absoluteMeasurements.x}, ${dragged.data.absoluteMeasurements.y})`
+					`Dragged item absolute coordinates (${dragged.data.absoluteMeasurements.x}, ${dragged.data.absoluteMeasurements.y})`,
 				);
 				console.log(
-					`Native event in-view touch coordinates: (${event.x}, ${event.y})`
+					`Native event in-view touch coordinates: (${event.x}, ${event.y})`,
 				);
 			}
 
@@ -576,20 +576,20 @@ export const DraxProvider = ({
 
 			if (debug) {
 				console.log(
-					`Drag at absolute coordinates (${dragAbsolutePosition.x}, ${dragAbsolutePosition.y})\n`
+					`Drag at absolute coordinates (${dragAbsolutePosition.x}, ${dragAbsolutePosition.y})\n`,
 				);
 				console.log(
-					`Drag translation (${dragTranslation.x}, ${dragTranslation.y})`
+					`Drag translation (${dragTranslation.x}, ${dragTranslation.y})`,
 				);
 				console.log(
-					`Drag translation ratio (${dragTranslationRatio.x}, ${dragTranslationRatio.y})`
+					`Drag translation ratio (${dragTranslationRatio.x}, ${dragTranslationRatio.y})`,
 				);
 			}
 
 			// Find which monitors and receiver this drag is over.
 			const { monitors, receiver } = findMonitorsAndReceiver(
 				dragAbsolutePosition,
-				dragged.id
+				dragged.id,
 			);
 
 			// Get the previous receiver, if any.
@@ -763,16 +763,16 @@ export const DraxProvider = ({
 						if (prevMonitorIds.includes(monitorId)) {
 							// Drag was already over this monitor.
 							monitorData.protocol.onMonitorDragOver?.(
-								monitorEventData
+								monitorEventData,
 							);
 						} else {
 							// Drag is entering monitor.
 							monitorData.protocol.onMonitorDragEnter?.(
-								monitorEventData
+								monitorEventData,
 							);
 						}
 						return monitorId;
-					}
+					},
 				);
 				prevMonitorIds
 					.filter((monitorId) => !newMonitorIds.includes(monitorId))
@@ -785,7 +785,7 @@ export const DraxProvider = ({
 								relativePositionRatio: monitorOffsetRatio,
 							} = getRelativePosition(
 								dragAbsolutePosition,
-								monitorData.absoluteMeasurements
+								monitorData.absoluteMeasurements,
 							);
 							monitorData.protocol.onMonitorDragExit?.({
 								...monitorEventDataStub,
@@ -809,7 +809,7 @@ export const DraxProvider = ({
 			updateReceiver,
 			setMonitorIds,
 			debug,
-		]
+		],
 	);
 
 	const contextValue: DraxContextValue = {
@@ -841,16 +841,12 @@ export const DraxProvider = ({
 					hoverViews.push(hoverView);
 				}
 			}
-		}
+		},
 	);
-
-	const setRootNodeHandleRef = useCallback((ref: View | null) => {
-		rootNodeHandleRef.current = ref && findNodeHandle(ref);
-	}, []);
 
 	return (
 		<DraxContext.Provider value={contextValue}>
-			<View style={style} ref={setRootNodeHandleRef}>
+			<View style={style} ref={rootViewRef}>
 				{children}
 				<View style={StyleSheet.absoluteFill} pointerEvents="none">
 					{hoverViews}
