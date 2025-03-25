@@ -397,9 +397,14 @@ export const DraxView = ({
 						? buildMeasureCallback(measurementHandler)
 						: updateMeasurements;
 					// console.log('definitely measuring in reference to something');
-					view.measureLayout(nodeHandle, measureCallback, () => {
-						// console.log('Failed to measure Drax view in relation to parent nodeHandle');
-					});
+					view.measureLayout(
+						// @ts-ignore
+						parentViewRef.current,
+						measureCallback,
+						() => {
+							// console.log('Failed to measure Drax view in relation to parent nodeHandle');
+						},
+					);
 				} else {
 					// console.log('No parent nodeHandle to measure Drax view in relation to');
 				}
@@ -407,7 +412,7 @@ export const DraxView = ({
 				// console.log('No view to measure');
 			}
 		},
-		[parentNodeHandleRef, buildMeasureCallback, updateMeasurements],
+		[parentViewRef, buildMeasureCallback, updateMeasurements],
 	);
 
 	// Measure and send our measurements to Drax context and onMeasure, used when this view finishes layout.
@@ -527,24 +532,16 @@ export const DraxView = ({
 		if (isParent) {
 			// This is a Drax parent, so wrap children in subprovider.
 			content = (
-				<DraxSubprovider parent={{ id, nodeHandleRef }}>
+				<DraxSubprovider parent={{ id, viewRef }}>
 					{content}
 				</DraxSubprovider>
 			);
 		}
 		return content;
-	}, [
-		renderContent,
-		getRenderContentProps,
-		children,
-		isParent,
-		id,
-		nodeHandleRef,
-	]);
+	}, [renderContent, getRenderContentProps, children, isParent, id, viewRef]);
 
 	const setViewRefs = useCallback((ref: View | null) => {
 		viewRef.current = ref;
-		nodeHandleRef.current = ref && findNodeHandle(ref);
 	}, []);
 
 	return (
