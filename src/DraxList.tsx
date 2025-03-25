@@ -33,8 +33,11 @@ import {
 	DraxViewRegistration,
 	DraxSnapbackTargetPreset,
 	isWithCancelledFlag,
+	DraxEventDraggedViewData,
 } from "./types";
 import { defaultListItemLongPressDelay } from "./params";
+
+// FIXME: allow external drops past the last item
 
 interface Shift {
 	targetValue: number;
@@ -445,8 +448,7 @@ const DraxListUnforwarded = <T extends unknown>(
 			const { index: fromIndex, originalIndex: fromOriginalIndex } =
 				fromPayload;
 
-			const { index: toIndex, originalIndex: toOriginalIndex } =
-				toPayload;
+			const { index: toIndex } = toPayload;
 			const containerMeasurements = containerMeasurementsRef.current;
 			const itemMeasurements = itemMeasurementsRef.current;
 			if (containerMeasurements) {
@@ -489,7 +491,7 @@ const DraxListUnforwarded = <T extends unknown>(
 					}
 				} else {
 					// Target pos(toIndex)
-					const toMeasurements = itemMeasurements[toOriginalIndex];
+					const toMeasurements = itemMeasurements[toIndex];
 					if (toMeasurements) {
 						targetPos = {
 							x: toMeasurements.x,
@@ -523,27 +525,18 @@ const DraxListUnforwarded = <T extends unknown>(
 			scrollStateRef.current = AutoScrollDirection.None;
 			stopScroll();
 
-			const { dragged, receiver } = eventData;
+			const { dragged } = eventData;
 
 			// Reset all shifts regardless of what happens
 			resetShifts(!totalDragEnd);
 
 			// Check if we need to handle this drag end.
 
-			const isOurReceiver = receiver?.parentId === id;
 			const isOurDragged = dragged.parentId === id;
+			const toIndex = findDropIndex(dragged);
 
 			// Handle receiving external item
-			if (
-				allowReceivingExternalItems &&
-				!isOurDragged &&
-				isOurReceiver &&
-				reorderable
-			) {
-				const toPayload = receiver.payload;
-
-				const { index: toIndex } = toPayload;
-
+			if (allowReceivingExternalItems && !isOurDragged && reorderable) {
 				// If an external item was dropped on us, call the callback
 
 				if (totalDragEnd && onReceiveExternalItem) {
@@ -568,16 +561,12 @@ const DraxListUnforwarded = <T extends unknown>(
 			} else if (reorderable && isOurDragged) {
 				// Determine list indexes of dragged/received items, if any.
 				const fromPayload = dragged.payload;
-				const toPayload = isOurReceiver ? receiver.payload : undefined;
 
 				const { index: fromIndex, originalIndex: fromOriginalIndex } =
 					fromPayload;
-				const { index: toIndex, originalIndex: toOriginalIndex } =
-					toPayload ?? {};
+
 				const toItem =
-					toOriginalIndex !== undefined
-						? data?.[toOriginalIndex]
-						: undefined;
+					toIndex !== undefined ? data?.[toIndex] : undefined;
 
 				if (totalDragEnd) {
 					onItemDragEnd?.({
@@ -606,11 +595,11 @@ const DraxListUnforwarded = <T extends unknown>(
 					draggedToIndex.current = undefined;
 				}
 
-				if (toPayload !== undefined) {
+				if (toIndex !== undefined) {
 					// If dragged item and received item were ours, reorder data.
 					const snapbackTarget = calculateSnapbackTarget(
 						fromPayload,
-						toPayload,
+						{ index: toIndex },
 					);
 					if (data) {
 						const newOriginalIndexes = originalIndexes.slice();
@@ -625,7 +614,7 @@ const DraxListUnforwarded = <T extends unknown>(
 							fromIndex,
 							fromItem: data[fromOriginalIndex],
 							toIndex: toIndex,
-							toItem: data[toOriginalIndex],
+							toItem: data[toIndex],
 						});
 					}
 					return snapbackTarget;
@@ -671,12 +660,106 @@ const DraxListUnforwarded = <T extends unknown>(
 		[id, reorderable, data, setDraggedItem, onItemDragStart],
 	);
 
+	const findDropIndex = useCallback(
+		(dragged: DraxEventDraggedViewData) => {
+			let toIndex: number | undefined = undefined;
+			console.log("[findDropIndex]: finding index", data?.length);
+			// If no receiver but item is still over our list, calculate position
+			if (data && data.length > 0) {
+				// Get list item measurements (you'll need to store these)
+				// @ts-ignore
+				const itemPositions: DraxViewMeasurements[] =
+					itemMeasurementsRef.current
+						.map((measurements) => {
+							// This assumes you have refs to your list items
+							if (!measurements) return null;
+							return measurements;
+						})
+						.filter(Boolean);
+
+				console.log(
+					"[findDropIndex]: item positions",
+					itemPositions.length,
+				);
+				if (itemPositions.length > 0) {
+					// Calculate which item we're closest to
+
+					console.log(
+						"[findDropIndex]: drag position",
+						dragged.absoluteMeasurements.x,
+						dragged.absoluteMeasurements.y,
+					);
+					const dragPosition = horizontal
+						? dragged.absoluteMeasurements.x
+						: dragged.absoluteMeasurements.y;
+
+					// Find the closest item or gap
+					// This creates pairs of adjacent items to find the gap between them
+					let closestIndex = 0;
+					let smallestDistance = Infinity;
+
+					// First check if we're before the first item
+					if (itemPositions[0]) {
+						const firstItemPos = horizontal
+							? itemPositions[0].x
+							: itemPositions[0].y;
+						if (dragPosition < firstItemPos) {
+							toIndex = 0; // Before first item
+						}
+					}
+
+					// Check if we're after the last item
+					if (
+						toIndex === undefined &&
+						itemPositions[itemPositions.length - 1]
+					) {
+						const lastItemPos = horizontal
+							? itemPositions[itemPositions.length - 1].x +
+								itemPositions[itemPositions.length - 1].width
+							: itemPositions[itemPositions.length - 1].y +
+								itemPositions[itemPositions.length - 1].height;
+
+						if (dragPosition > lastItemPos) {
+							toIndex = data.length; // After last item
+						}
+					}
+
+					// Check between items
+					if (toIndex === undefined) {
+						for (let i = 0; i < itemPositions.length - 1; i++) {
+							const current = itemPositions[i];
+							const next = itemPositions[i + 1];
+
+							if (!current || !next) continue;
+
+							const currentEnd = horizontal
+								? current.x + current.width
+								: current.y + current.height;
+							const nextStart = horizontal ? next.x : next.y;
+							const gapMiddle = (currentEnd + nextStart) / 2;
+
+							const distance = Math.abs(dragPosition - gapMiddle);
+							if (distance < smallestDistance) {
+								smallestDistance = distance;
+								closestIndex = i + 1; // Position after current item
+							}
+						}
+
+						toIndex = closestIndex;
+					}
+				}
+			}
+
+			return toIndex;
+		},
+		[data, horizontal, itemMeasurementsRef],
+	);
+
 	// Monitor drags to react with item shifts and auto-scrolling.
 	const onMonitorDragOver = useCallback(
 		(eventData: DraxMonitorEventData) => {
-			const { dragged, receiver, monitorOffsetRatio } = eventData;
+			const { dragged, monitorOffsetRatio } = eventData;
 			const isDraggedFromOurList = dragged.parentId === id;
-			const isReceiverInOurList = receiver?.parentId === id;
 			// First, check if we need to shift items.
 
 			if (
@@ -688,14 +771,10 @@ const DraxListUnforwarded = <T extends unknown>(
 
 				// Add parent ID to distinguish external items
 				fromPayload.parentId = dragged.parentId;
-				// Find current position in the list, if any
-				const toPayload = isReceiverInOurList
-					? receiver.payload
-					: undefined;
 
 				// Check and update currently dragged over position index
+				let toIndex = findDropIndex(dragged);
 
-				const toIndex = toPayload?.index;
 				if (toIndex !== draggedToIndex.current) {
 					if (isDraggedFromOurList) {
 						onItemDragPositionChange?.({
@@ -713,10 +792,10 @@ const DraxListUnforwarded = <T extends unknown>(
 				}
 
 				// Update shift transforms for items in the list
-				if (toPayload) {
+				if (toIndex) {
 					updateShifts(
 						fromPayload,
-						toPayload,
+						{ index: toIndex },
 						dragged.absoluteMeasurements,
 					);
 				}
@@ -779,6 +858,7 @@ const DraxListUnforwarded = <T extends unknown>(
 		<DraxView
 			id={id}
 			style={style}
+			receptive={true}
 			scrollPositionRef={scrollPositionRef}
 			onMeasure={onMeasureContainer}
 			onMonitorDragStart={onMonitorDragStart}
