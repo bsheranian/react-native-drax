@@ -56,7 +56,7 @@ const defaultStyles = StyleSheet.create({
 
 const DraxListUnforwarded = <T extends unknown>(
 	props: PropsWithChildren<DraxListProps<T>>,
-	forwardedRef: ForwardedRef<FlatList>,
+	forwardedRef: ForwardedRef<FlatList>
 ): JSX.Element => {
 	const {
 		data,
@@ -98,7 +98,7 @@ const DraxListUnforwarded = <T extends unknown>(
 
 	// Container view measurements, for scrolling by percentage.
 	const containerMeasurementsRef = useRef<DraxViewMeasurements | undefined>(
-		undefined,
+		undefined
 	);
 
 	// Content size, for scrolling by percentage.
@@ -118,7 +118,7 @@ const DraxListUnforwarded = <T extends unknown>(
 
 	// List item measurements, for determining shift.
 	const itemMeasurementsRef = useRef<(DraxViewMeasurements | undefined)[]>(
-		[],
+		[]
 	);
 
 	// Drax view registrations, for remeasuring after reorder.
@@ -190,7 +190,7 @@ const DraxListUnforwarded = <T extends unknown>(
 				? [{ translateX: shift }]
 				: [{ translateY: shift }];
 		},
-		[horizontal],
+		[horizontal]
 	);
 
 	// Set the currently dragged list item.
@@ -269,7 +269,7 @@ const DraxListUnforwarded = <T extends unknown>(
 			longPressDelay,
 			lockItemDragsToMainAxis,
 			horizontal,
-		],
+		]
 	);
 
 	// Track the size of the container view.
@@ -277,7 +277,7 @@ const DraxListUnforwarded = <T extends unknown>(
 		(measurements: DraxViewMeasurements | undefined) => {
 			containerMeasurementsRef.current = measurements;
 		},
-		[],
+		[]
 	);
 
 	// Track the size of the content.
@@ -298,7 +298,7 @@ const DraxListUnforwarded = <T extends unknown>(
 				}
 			}
 		},
-		[forwardedRef],
+		[forwardedRef]
 	);
 
 	// Update tracked scroll position when list is scrolled.
@@ -310,7 +310,7 @@ const DraxListUnforwarded = <T extends unknown>(
 			scrollPositionRef.current = { ...contentOffset };
 			onScrollProp?.(event);
 		},
-		[onScrollProp],
+		[onScrollProp]
 	);
 
 	// Handle auto-scrolling on interval.
@@ -394,7 +394,7 @@ const DraxListUnforwarded = <T extends unknown>(
 	}, []);
 
 	const extractedStyles = StyleSheet.flatten(
-		flatListProps.contentContainerStyle ?? {},
+		flatListProps.contentContainerStyle ?? {}
 	);
 	// @ts-ignore
 	const gap = extractedStyles.gap ?? 0;
@@ -434,7 +434,7 @@ const DraxListUnforwarded = <T extends unknown>(
 				}
 			});
 		},
-		[originalIndexes, horizontal, columnGap, rowGap, id],
+		[originalIndexes, horizontal, columnGap, rowGap, id]
 	);
 
 	// Calculate absolute position of list item for snapback.
@@ -483,11 +483,11 @@ const DraxListUnforwarded = <T extends unknown>(
 							? {
 									x: nextPos.x - fromMeasurements.width,
 									y: nextPos.y,
-								}
+							  }
 							: {
 									x: nextPos.x,
 									y: nextPos.y - fromMeasurements.height,
-								};
+							  };
 					}
 				} else {
 					// Target pos(toIndex)
@@ -515,22 +515,27 @@ const DraxListUnforwarded = <T extends unknown>(
 			}
 			return DraxSnapbackTargetPreset.None;
 		},
-		[horizontal, itemCount, originalIndexes, id],
+		[horizontal, itemCount, originalIndexes, id]
+	);
+
+	const handleDragEnd = useCallback(
+		({ animateShifts }: { animateShifts: boolean }) => {
+			// Reset all shifts regardless of what happens
+			resetShifts(animateShifts);
+
+			// Always stop auto-scroll on drag end.
+			scrollStateRef.current = AutoScrollDirection.None;
+			stopScroll();
+		},
+		[resetShifts, stopScroll]
 	);
 
 	// Stop auto-scrolling, and potentially update shifts and reorder data.
 	const handleDragDrop = useCallback(
 		(eventData) => {
-			// Always stop auto-scroll on drag end.
-			scrollStateRef.current = AutoScrollDirection.None;
-			stopScroll();
+			handleDragEnd({ animateShifts: false });
 
 			const { dragged } = eventData;
-
-			// Reset all shifts regardless of what happens
-			resetShifts(false);
-
-			// Check if we need to handle this drag end.
 
 			const isOurDragged = dragged.parentId === id;
 			const toIndex = findDropIndex(dragged);
@@ -594,7 +599,7 @@ const DraxListUnforwarded = <T extends unknown>(
 					// If dragged item and received item were ours, reorder data.
 					const snapbackTarget = calculateSnapbackTarget(
 						fromPayload,
-						{ index: toIndex },
+						{ index: toIndex }
 					);
 					if (data) {
 						const newOriginalIndexes = originalIndexes.slice();
@@ -602,7 +607,7 @@ const DraxListUnforwarded = <T extends unknown>(
 						newOriginalIndexes.splice(
 							toIndex,
 							0,
-							newOriginalIndexes.splice(fromIndex, 1)[0],
+							newOriginalIndexes.splice(fromIndex, 1)[0]
 						);
 						setOriginalIndexes(newOriginalIndexes);
 						onItemReorder?.({
@@ -621,9 +626,8 @@ const DraxListUnforwarded = <T extends unknown>(
 		[
 			id,
 			data,
-			stopScroll,
+			handleDragEnd,
 			reorderable,
-			resetShifts,
 			calculateSnapbackTarget,
 			originalIndexes,
 			onItemDragEnd,
@@ -631,7 +635,7 @@ const DraxListUnforwarded = <T extends unknown>(
 			onItemReorder,
 			allowReceivingExternalItems,
 			onReceiveExternalItem,
-		],
+		]
 	);
 
 	// Monitor drag starts to handle callbacks.
@@ -652,7 +656,7 @@ const DraxListUnforwarded = <T extends unknown>(
 			}
 		},
 
-		[id, reorderable, data, setDraggedItem, onItemDragStart],
+		[id, reorderable, data, setDraggedItem, onItemDragStart]
 	);
 
 	const findDropIndex = useCallback(
@@ -676,11 +680,11 @@ const DraxListUnforwarded = <T extends unknown>(
 
 					const dragPosition = horizontal
 						? dragged.absoluteMeasurements.x +
-							dragged.dragOffset.x -
-							dragged.grabOffset.x
+						  dragged.dragOffset.x -
+						  dragged.grabOffset.x
 						: dragged.absoluteMeasurements.y +
-							dragged.dragOffset.y -
-							dragged.grabOffset.y;
+						  dragged.dragOffset.y -
+						  dragged.grabOffset.y;
 
 					// Check between items
 					for (let i = 0; i < itemCentroids.length; i++) {
@@ -693,7 +697,7 @@ const DraxListUnforwarded = <T extends unknown>(
 			}
 			return undefined;
 		},
-		[data, horizontal, itemMeasurementsRef],
+		[data, horizontal, itemMeasurementsRef]
 	);
 
 	// Monitor drags to react with item shifts and auto-scrolling.
@@ -737,7 +741,7 @@ const DraxListUnforwarded = <T extends unknown>(
 					updateShifts(
 						fromPayload,
 						{ index: toIndex },
-						dragged.absoluteMeasurements,
+						dragged.absoluteMeasurements
 					);
 				}
 			}
@@ -767,23 +771,29 @@ const DraxListUnforwarded = <T extends unknown>(
 			stopScroll,
 			startScroll,
 			onItemDragPositionChange,
-		],
+		]
 	);
 
 	// Monitor drag exits to stop scrolling, update shifts, and update draggedToIndex.
-	const onMonitorDragExit = useCallback(() => resetShifts(true), []);
+	const onMonitorDragExit = useCallback(
+		() => handleDragEnd({ animateShifts: true }),
+		[handleDragEnd]
+	);
 
 	/*
 	 * Monitor drag ends to stop scrolling, update shifts, and possibly reorder.
 	 * This addresses the Android case where if we drag a list item and auto-scroll
 	 * too far, the drag gets cancelled.
 	 */
-	const onMonitorDragEnd = useCallback(() => resetShifts(false), []);
+	const onMonitorDragEnd = useCallback(
+		() => handleDragEnd({ animateShifts: false }),
+		[handleDragEnd]
+	);
 
 	// Monitor drag drops to stop scrolling, update shifts, and possibly reorder.
 	const onMonitorDragDrop = useCallback(
 		(eventData: DraxMonitorDragDropEventData) => handleDragDrop(eventData),
-		[handleDragDrop],
+		[handleDragDrop]
 	);
 
 	return (
@@ -828,6 +838,6 @@ const DraxListUnforwarded = <T extends unknown>(
  * https://fettblog.eu/typescript-react-generic-forward-refs/
  */
 type DraxListType = <T extends unknown>(
-	props: PropsWithChildren<DraxListProps<T>> & { ref?: Ref<FlatList> },
+	props: PropsWithChildren<DraxListProps<T>> & { ref?: Ref<FlatList> }
 ) => JSX.Element;
 export const DraxList = forwardRef(DraxListUnforwarded) as DraxListType;
