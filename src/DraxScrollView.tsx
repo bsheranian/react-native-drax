@@ -14,7 +14,7 @@ import {
 
 import { DraxView } from "./DraxView";
 import { DraxSubprovider } from "./DraxSubprovider";
-import { useDraxId } from "./hooks";
+import { useDraxContext, useDraxId } from "./hooks";
 import {
 	DraxScrollViewProps,
 	AutoScrollDirection,
@@ -237,6 +237,12 @@ const DraxScrollViewUnforwarded = (
 		[onScrollProp],
 	);
 
+	const draxContext = useDraxContext();
+	const parentPosition = draxContext.parent?.scrollPosition || {
+		x: 0,
+		y: 0,
+	};
+
 	return id ? (
 		<DraxView
 			id={id}
@@ -248,7 +254,16 @@ const DraxScrollViewUnforwarded = (
 			onMonitorDragEnd={resetScroll}
 			onMonitorDragDrop={resetScroll}
 		>
-			<DraxSubprovider parent={{ id, viewRef: scrollRef }}>
+			<DraxSubprovider
+				parent={{
+					id,
+					viewRef: scrollRef,
+					scrollPosition: {
+						x: scrollPositionRef.current.x + parentPosition.x,
+						y: scrollPositionRef.current.y + parentPosition.y,
+					},
+				}}
+			>
 				<ScrollView
 					{...scrollViewProps}
 					ref={setScrollViewRefs}

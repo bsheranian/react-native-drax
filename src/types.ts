@@ -652,6 +652,8 @@ export interface DraxParentView {
 	id: string;
 	/** View Ref of the parent, for measuring relative to */
 	viewRef: RefObject<FlatList | ScrollView | View | null>;
+	/** Scroll position ref of the parent, for scrollable parent views */
+	scrollPosition?: Position;
 }
 
 /** Function that receives a Drax view measurement */
