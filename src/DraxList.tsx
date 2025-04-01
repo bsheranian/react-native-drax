@@ -663,11 +663,9 @@ const DraxListUnforwarded = <T extends unknown>(
 	const getRelativeScrollPosition = (
 		position: Position,
 		parent?: DraxParentView,
-		depth = 0,
 	): Position => {
 		const parentScrollPosition = parent?.scrollPositionRef?.current;
 
-		console.log(depth, "parentScrollPosition", parentScrollPosition);
 		if (!parentScrollPosition) {
 			return position;
 		}
@@ -675,19 +673,7 @@ const DraxListUnforwarded = <T extends unknown>(
 		const relativeParentScrollPosition = getRelativeScrollPosition(
 			parentScrollPosition,
 			parent.parent,
-			depth + 1,
 		);
-
-		console.log(
-			depth,
-			"relativeParentScrollPosition",
-			relativeParentScrollPosition,
-		);
-
-		console.log(depth, "final", {
-			x: position.x + relativeParentScrollPosition.x,
-			y: position.y + relativeParentScrollPosition.y,
-		});
 
 		return {
 			x: position.x + relativeParentScrollPosition.x,
@@ -717,16 +703,16 @@ const DraxListUnforwarded = <T extends unknown>(
 						parent,
 					);
 
-					console.log("FINAL", relativeScrollPosition);
-
 					// Calculate drag position with combined scroll offset
 					const dragPosition = horizontal
 						? dragged.absoluteMeasurements.x +
 							dragged.dragOffset.x -
-							dragged.grabOffset.x
+							dragged.grabOffset.x +
+							relativeScrollPosition.x
 						: dragged.absoluteMeasurements.y +
 							dragged.dragOffset.y -
-							dragged.grabOffset.y;
+							dragged.grabOffset.y +
+							relativeScrollPosition.y;
 
 					// Check between items
 					for (let i = 0; i < itemCentroids.length; i++) {
