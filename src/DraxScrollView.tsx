@@ -237,11 +237,7 @@ const DraxScrollViewUnforwarded = (
 		[onScrollProp],
 	);
 
-	const draxContext = useDraxContext();
-	const parentPosition = draxContext.parent?.scrollPosition || {
-		x: 0,
-		y: 0,
-	};
+	const { parent } = useDraxContext();
 
 	return id ? (
 		<DraxView
@@ -258,10 +254,8 @@ const DraxScrollViewUnforwarded = (
 				parent={{
 					id,
 					viewRef: scrollRef,
-					scrollPosition: {
-						x: scrollPositionRef.current.x + parentPosition.x,
-						y: scrollPositionRef.current.y + parentPosition.y,
-					},
+					scrollPositionRef,
+					parent,
 				}}
 			>
 				<ScrollView

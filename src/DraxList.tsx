@@ -34,6 +34,7 @@ import {
 	DraxSnapbackTargetPreset,
 	isWithCancelledFlag,
 	DraxEventDraggedViewData,
+	DraxParentView,
 } from "./types";
 import { defaultListItemLongPressDelay } from "./params";
 
@@ -659,10 +660,39 @@ const DraxListUnforwarded = <T extends unknown>(
 		[id, reorderable, data, setDraggedItem, onItemDragStart],
 	);
 
-	const draxContext = useDraxContext();
-	const parentScrollPosition = draxContext.parent?.scrollPosition || {
-		x: 0,
-		y: 0,
+	const getRelativeScrollPosition = (
+		position: Position,
+		parent?: DraxParentView,
+		depth = 0,
+	): Position => {
+		const parentScrollPosition = parent?.scrollPositionRef?.current;
+
+		console.log(depth, "parentScrollPosition", parentScrollPosition);
+		if (!parentScrollPosition) {
+			return position;
+		}
+
+		const relativeParentScrollPosition = getRelativeScrollPosition(
+			parentScrollPosition,
+			parent.parent,
+			depth + 1,
+		);
+
+		console.log(
+			depth,
+			"relativeParentScrollPosition",
+			relativeParentScrollPosition,
+		);
+
+		console.log(depth, "final", {
+			x: position.x + relativeParentScrollPosition.x,
+			y: position.y + relativeParentScrollPosition.y,
+		});
+
+		return {
+			x: position.x + relativeParentScrollPosition.x,
+			y: position.y + relativeParentScrollPosition.y,
+		};
 	};
 
 	const findDropIndex = useCallback(
@@ -682,22 +712,12 @@ const DraxListUnforwarded = <T extends unknown>(
 					.filter((centroid): centroid is number => centroid !== null)
 					.sort((a, b) => a - b);
 				if (itemCentroids.length > 0) {
-					// Get the parent context (you'll need to implement this)
+					const relativeScrollPosition = getRelativeScrollPosition(
+						scrollPositionRef.current,
+						parent,
+					);
 
-					console.log("PARENT:", parentScrollPosition);
-
-					// Get the local scroll position
-					const localScrollOffset = scrollPositionRef.current;
-
-					console.log("LOCAL:", localScrollOffset);
-
-					// Combine both scroll positions
-					const totalScrollOffset = {
-						x: localScrollOffset.x + parentScrollPosition.x,
-						y: localScrollOffset.y + parentScrollPosition.y,
-					};
-
-					console.log("TOTAL:", totalScrollOffset);
+					console.log("FINAL", relativeScrollPosition);
 
 					// Calculate drag position with combined scroll offset
 					const dragPosition = horizontal
@@ -719,7 +739,7 @@ const DraxListUnforwarded = <T extends unknown>(
 			}
 			return undefined;
 		},
-		[data, horizontal, itemMeasurementsRef, parentScrollPosition],
+		[data, horizontal, itemMeasurementsRef],
 	);
 
 	// Monitor drags to react with item shifts and auto-scrolling.
@@ -818,6 +838,8 @@ const DraxListUnforwarded = <T extends unknown>(
 		[handleDragDrop],
 	);
 
+	const { parent } = useDraxContext();
+
 	return (
 		<DraxView
 			id={id}
@@ -838,10 +860,8 @@ const DraxListUnforwarded = <T extends unknown>(
 						//@ts-ignore
 						current: flatListRef.current?.getNativeScrollRef(),
 					},
-					scrollPosition: {
-						x: scrollPositionRef.current.x + parentScrollPosition.x,
-						y: scrollPositionRef.current.y + parentScrollPosition.y,
-					},
+					scrollPositionRef,
+					parent,
 				}}
 			>
 				<FlatList
