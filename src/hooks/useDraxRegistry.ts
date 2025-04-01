@@ -184,7 +184,6 @@ const findMonitorsAndReceiverInRegistry = (
 		const absoluteMeasurements = getAbsoluteMeasurementsForViewFromRegistry(
 			registry,
 			target,
-			true,
 		);
 
 		if (!absoluteMeasurements) {

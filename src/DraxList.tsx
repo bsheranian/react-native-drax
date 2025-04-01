@@ -687,32 +687,36 @@ const DraxListUnforwarded = <T extends unknown>(
 			if (data && data.length > 0) {
 				// Get list item measurements (you'll need to store these)
 				// @ts-ignore
+
+				const relativeScrollPosition = getRelativeScrollPosition(
+					scrollPositionRef.current,
+					parent,
+				);
+
 				const itemCentroids = itemMeasurementsRef.current
 					.map((measurements) => {
 						// This assumes you have refs to your list items
 						if (!measurements) return null;
-						return horizontal
+
+						const centroid = horizontal
 							? measurements.x + measurements.width / 2
 							: measurements.y + measurements.height / 2;
+						const scrollOffset = horizontal
+							? relativeScrollPosition.x
+							: relativeScrollPosition.y;
+						return centroid - scrollOffset;
 					})
 					.filter((centroid): centroid is number => centroid !== null)
 					.sort((a, b) => a - b);
 				if (itemCentroids.length > 0) {
-					const relativeScrollPosition = getRelativeScrollPosition(
-						scrollPositionRef.current,
-						parent,
-					);
-
 					// Calculate drag position with combined scroll offset
 					const dragPosition = horizontal
 						? dragged.absoluteMeasurements.x +
 							dragged.dragOffset.x -
-							dragged.grabOffset.x +
-							relativeScrollPosition.x
+							dragged.grabOffset.x
 						: dragged.absoluteMeasurements.y +
 							dragged.dragOffset.y -
-							dragged.grabOffset.y +
-							relativeScrollPosition.y;
+							dragged.grabOffset.y;
 
 					// Check between items
 					for (let i = 0; i < itemCentroids.length; i++) {
