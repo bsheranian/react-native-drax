@@ -19,7 +19,7 @@ import {
 	LongPressGestureHandlerGestureEvent,
 	LongPressGestureHandlerStateChangeEvent,
 } from "react-native-gesture-handler";
-import throttle from "lodash.throttle";
+import { throttle } from "lodash";
 
 import { useDraxId, useDraxContext } from "./hooks";
 import {

@@ -5,7 +5,7 @@ import {
 	// useEffect,
 } from "react";
 import { getType, createAction } from "typesafe-actions";
-import isEqual from "lodash.isequal";
+import { isEqual } from "lodash";
 
 import {
 	DraxState,
